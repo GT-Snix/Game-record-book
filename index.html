@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GamerTrix — Speedrun Records</title>
+    <meta name="description" content="Browse verified world speedrun records from Speedrun.com.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode:'class', theme:{ extend:{
+            colors:{ dark:{bg:'#0f0f0f',card:'#1a1a1a',surface:'#262626',hover:'#333',border:'#333'}, accent:'#1ed760' },
+            fontFamily:{ sans:['Inter','sans-serif'] }
+        }}}
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark bg-dark-bg text-white font-sans flex flex-col h-screen overflow-hidden transition-colors">
+    <!-- Navbar -->
+    <header id="navbar" class="flex items-center justify-between px-4 md:px-6 h-14 bg-dark-bg border-b border-dark-border flex-shrink-0 z-30 transition-colors">
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-2xl">🎮</span>
+            <span class="text-xl font-bold tracking-tight">Gamer<span class="text-accent">Trix</span></span>
+        </div>
+        <div class="flex-1 max-w-xl mx-4 sm:mx-8">
+            <div class="flex">
+                <input type="text" id="search-input" placeholder="Search any game..." class="search-input w-full bg-transparent border border-dark-border rounded-l-full py-2 px-5 outline-none focus:border-accent text-sm transition-colors"/>
+                <button id="search-btn" class="search-btn bg-dark-surface border border-dark-border border-l-0 px-5 rounded-r-full hover:bg-dark-hover transition-colors">🔍</button>
+            </div>
+        </div>
+        <button id="theme-toggle" class="p-2 rounded-full hover:bg-dark-hover transition-colors" title="Toggle theme">
+            <span id="icon-sun">☀️</span><span id="icon-moon" class="hidden">🌙</span>
+        </button>
+    </header>
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-8 lg:px-12 pt-6 pb-20 transition-colors" id="main-content">
+        <div id="games-loading" class="flex flex-col items-center justify-center py-24 text-accent">
+            <p class="text-lg animate-pulse">Loading games...</p>
+        </div>
+        <div id="games-grid" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"></div>
+        <div id="no-results" class="hidden flex flex-col items-center justify-center py-32 text-center">
+            <h2 class="text-xl font-bold mb-2">No results found</h2>
+            <p class="opacity-50 text-sm">Try different keywords.</p>
+        </div>
+    </main>
+    <!-- Modal -->
+    <div id="game-modal" class="fixed inset-0 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity p-4">
+        <div class="absolute inset-0 bg-black/80" id="modal-backdrop"></div>
+        <div class="modal-panel relative w-full max-w-2xl bg-dark-card border border-dark-border rounded-2xl overflow-hidden flex flex-col transform scale-95 transition-all" style="max-height:85vh">
+            <button id="close-modal" class="absolute top-3 right-3 z-20 p-2 rounded-full bg-black/50 hover:bg-black/80 text-white transition-colors">✕</button>
+            <div class="px-6 pt-5 pb-3 border-b border-dark-border flex-shrink-0">
+                <h3 id="modal-game-title" class="text-xl font-bold mb-1"></h3>
+                <p class="text-sm opacity-50">Speedrun Archive · <span id="modal-game-year"></span></p>
+            </div>
+            <div class="px-6 border-b border-dark-border flex-shrink-0">
+                <div id="modal-categories" class="flex overflow-x-auto gap-2 py-3 scrollbar-hide"></div>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar" id="modal-records-container">
+                <div id="records-loading" class="flex items-center justify-center py-16 text-accent"><p class="animate-pulse">Loading records...</p></div>
+                <div id="empty-records" class="hidden flex items-center justify-center py-16 opacity-40"><p class="text-sm">No records available.</p></div>
+                <div id="records-list" class="divide-y divide-dark-border"></div>
+                <div class="py-4 px-6 text-center hidden" id="load-more-container">
+                    <button id="load-more-btn" class="px-8 py-2 bg-dark-surface hover:bg-dark-hover rounded-full transition-colors text-sm font-medium">Show More</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>
