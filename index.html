@@ -3,68 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GamerTrix — Speedrun Records</title>
-    <meta name="description" content="Browse verified world speedrun records from Speedrun.com.">
+    <title>GamerTube Records — World Speedrun Archive</title>
+    <meta name="description" content="Browse verified world speedrun records from Speedrun.com. Search any game, view top runs, and watch record-breaking gameplay.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { darkMode:'class', theme:{ extend:{
-            colors:{ dark:{bg:'#0f0f0f',card:'#1a1a1a',surface:'#262626',hover:'#333',border:'#333'}, accent:'#1ed760' },
-            fontFamily:{ sans:['Inter','sans-serif'] }
-        }}}
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { bg: '#0f0f0f', card: '#1a1a1a', surface: '#262626', hover: '#333333', border: '#333333' },
+                        light: { bg: '#f9f9f9', card: '#ffffff', surface: '#f0f0f0', hover: '#e5e5e5', border: '#d4d4d4' },
+                        accent: '#1ed760',
+                        accentHover: '#1cdf5a',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Roboto', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="dark bg-dark-bg text-white font-sans flex flex-col h-screen overflow-hidden transition-colors">
-    <!-- Navbar -->
-    <header id="navbar" class="flex items-center justify-between px-4 md:px-6 h-14 bg-dark-bg border-b border-dark-border flex-shrink-0 z-30 transition-colors">
-        <div class="flex items-center gap-2 flex-shrink-0">
-            <span class="text-2xl">🎮</span>
-            <span class="text-xl font-bold tracking-tight">Gamer<span class="text-accent">Trix</span></span>
+<body class="dark bg-dark-bg text-white font-sans flex flex-col h-screen overflow-hidden transition-colors duration-300">
+
+    <!-- Top Navbar -->
+    <header id="navbar" class="flex items-center justify-between px-4 md:px-6 h-14 bg-dark-bg border-b border-dark-border flex-shrink-0 z-30 transition-colors duration-300">
+        <!-- Left: Logo -->
+        <div class="flex items-center gap-2 cursor-pointer select-none flex-shrink-0">
+            <svg class="w-8 h-8 text-accent" viewBox="0 0 24 24" fill="currentColor"><path d="M21.58 7.19c-.23-1.1-1.05-1.92-2.15-2.15C17.53 4.5 12 4.5 12 4.5s-5.53 0-7.43.54c-1.1.23-1.92 1.05-2.15 2.15C1.88 9.09 1.88 12 1.88 12s0 2.91.54 4.81c.23 1.1 1.05 1.92 2.15 2.15 1.9.54 7.43.54 7.43.54s5.53 0 7.43-.54c1.1-.23 1.92-1.05 2.15-2.15.54-1.9.54-4.81.54-4.81s0-2.91-.54-4.81zM9.98 15.19l0-6.38 6.07 3.19-6.07 3.19z"></path></svg>
+            <span class="text-xl font-bold tracking-tight">GamerTube</span>
         </div>
+
+        <!-- Center: Search Bar -->
         <div class="flex-1 max-w-xl mx-4 sm:mx-8">
-            <div class="flex">
-                <input type="text" id="search-input" placeholder="Search any game..." class="search-input w-full bg-transparent border border-dark-border rounded-l-full py-2 px-5 outline-none focus:border-accent text-sm transition-colors"/>
-                <button id="search-btn" class="search-btn bg-dark-surface border border-dark-border border-l-0 px-5 rounded-r-full hover:bg-dark-hover transition-colors">🔍</button>
+            <div class="flex w-full">
+                <input type="text" id="search-input" placeholder="Search any game..." 
+                    class="search-input w-full bg-transparent border border-dark-border rounded-l-full py-2 px-5 outline-none focus:border-accent text-sm transition-colors duration-300" />
+                <button id="search-btn" class="search-btn bg-dark-surface border border-dark-border border-l-0 px-5 rounded-r-full hover:bg-dark-hover transition-colors flex items-center justify-center">
+                    <svg class="w-5 h-5 opacity-70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"></path></svg>
+                </button>
             </div>
         </div>
-        <button id="theme-toggle" class="p-2 rounded-full hover:bg-dark-hover transition-colors" title="Toggle theme">
-            <span id="icon-sun">☀️</span><span id="icon-moon" class="hidden">🌙</span>
-        </button>
-    </header>
-    <!-- Main -->
-    <main class="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-8 lg:px-12 pt-6 pb-20 transition-colors" id="main-content">
-        <div id="games-loading" class="flex flex-col items-center justify-center py-24 text-accent">
-            <p class="text-lg animate-pulse">Loading games...</p>
+
+        <!-- Right: Theme Toggle -->
+        <div class="flex items-center flex-shrink-0">
+            <button id="theme-toggle" class="p-2 rounded-full hover:bg-dark-hover transition-colors" title="Toggle light/dark theme">
+                <svg id="icon-sun" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"></path></svg>
+                <svg id="icon-moon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"></path></svg>
+            </button>
         </div>
-        <div id="games-grid" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"></div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-8 lg:px-12 pt-6 pb-20 transition-colors duration-300" id="main-content">
+        
+        <!-- Loading State -->
+        <div id="games-loading" class="flex flex-col items-center justify-center py-24 text-accent">
+            <svg class="animate-spin h-10 w-10 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="font-medium opacity-60 tracking-wider text-sm">Loading games...</p>
+        </div>
+
+        <!-- Games Grid -->
+        <div id="games-grid" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8"></div>
+        
+        <!-- No Results -->
         <div id="no-results" class="hidden flex flex-col items-center justify-center py-32 text-center">
+            <svg class="w-20 h-20 opacity-20 mb-6" fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
             <h2 class="text-xl font-bold mb-2">No results found</h2>
-            <p class="opacity-50 text-sm">Try different keywords.</p>
+            <p class="opacity-50 text-sm">Try different keywords or check Speedrun.com directly.</p>
         </div>
     </main>
-    <!-- Modal -->
-    <div id="game-modal" class="fixed inset-0 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity p-4">
-        <div class="absolute inset-0 bg-black/80" id="modal-backdrop"></div>
-        <div class="modal-panel relative w-full max-w-2xl bg-dark-card border border-dark-border rounded-2xl overflow-hidden flex flex-col transform scale-95 transition-all" style="max-height:85vh">
-            <button id="close-modal" class="absolute top-3 right-3 z-20 p-2 rounded-full bg-black/50 hover:bg-black/80 text-white transition-colors">✕</button>
-            <div class="px-6 pt-5 pb-3 border-b border-dark-border flex-shrink-0">
-                <h3 id="modal-game-title" class="text-xl font-bold mb-1"></h3>
-                <p class="text-sm opacity-50">Speedrun Archive · <span id="modal-game-year"></span></p>
+
+    <!-- Game Detail Modal -->
+    <div id="game-modal" class="fixed inset-0 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-3 sm:p-6">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" id="modal-backdrop"></div>
+        <div class="modal-panel relative w-full max-w-3xl bg-dark-card border border-dark-border shadow-2xl rounded-2xl overflow-hidden flex flex-col transform scale-95 transition-all duration-300" id="modal-content" style="max-height: 88vh;">
+            
+            <!-- Close Button -->
+            <button id="close-modal" class="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <!-- Top: Hero Poster with Trailer Link -->
+            <div id="modal-trailer-container" class="aspect-video w-full bg-black flex-shrink-0 relative overflow-hidden">
+                <img id="modal-poster" src="" alt="Game Poster" class="w-full h-full object-cover opacity-60">
+                <div class="absolute inset-0 bg-gradient-to-t from-dark-card via-black/40 to-black/20"></div>
             </div>
+
+            <!-- Game Info -->
+            <div class="px-6 pt-4 pb-3 border-b border-dark-border flex-shrink-0">
+                <h3 id="modal-game-title" class="text-xl md:text-2xl font-bold mb-1 leading-tight"></h3>
+                <div class="flex items-center gap-2 text-sm opacity-50">
+                    <span>Speedrun Archive</span>
+                    <span>•</span>
+                    <span id="modal-game-year">2023</span>
+                </div>
+            </div>
+
+            <!-- Category Tabs -->
             <div class="px-6 border-b border-dark-border flex-shrink-0">
                 <div id="modal-categories" class="flex overflow-x-auto gap-2 py-3 scrollbar-hide"></div>
             </div>
+
+            <!-- Records List -->
             <div class="flex-1 overflow-y-auto custom-scrollbar" id="modal-records-container">
-                <div id="records-loading" class="flex items-center justify-center py-16 text-accent"><p class="animate-pulse">Loading records...</p></div>
-                <div id="empty-records" class="hidden flex items-center justify-center py-16 opacity-40"><p class="text-sm">No records available.</p></div>
+                <div id="records-loading" class="flex items-center justify-center py-16 text-accent">
+                    <svg class="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </div>
+                <div id="empty-records" class="hidden flex flex-col items-center justify-center py-16 opacity-40">
+                    <p class="text-sm">No records available for this category.</p>
+                </div>
                 <div id="records-list" class="divide-y divide-dark-border"></div>
                 <div class="py-4 px-6 text-center hidden" id="load-more-container">
-                    <button id="load-more-btn" class="px-8 py-2 bg-dark-surface hover:bg-dark-hover rounded-full transition-colors text-sm font-medium">Show More</button>
+                    <button id="load-more-btn" class="px-8 py-2.5 bg-dark-surface hover:bg-dark-hover rounded-full transition-colors text-sm font-medium">Show More</button>
                 </div>
             </div>
         </div>
     </div>
+
     <script type="module" src="./js/main.js"></script>
 </body>
 </html>
