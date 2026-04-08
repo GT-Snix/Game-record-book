@@ -1,306 +1,98 @@
-// js/ui.js — DOM rendering, cards, modal, theme toggle
+// ui.js — rendering, modal, theme
 import { fetchGameCategories, fetchGameRecords } from './api.js';
+const el = id => document.getElementById(id);
+const grid = el('games-grid'), loading = el('games-loading'), noResults = el('no-results');
+const modal = el('game-modal'), backdrop = el('modal-backdrop'), closeBtn = el('close-modal');
+const mTitle = el('modal-game-title'), mYear = el('modal-game-year'), mCats = el('modal-categories');
+const recList = el('records-list'), recLoading = el('records-loading'), recEmpty = el('empty-records');
+const moreBox = el('load-more-container'), moreBtn = el('load-more-btn'), recContainer = el('modal-records-container');
+let darkMode = true, tabs = {}, activeTab = '', showing = 10;
 
-// ─── DOM References ─────────────────────────────────────────
-const $ = (id) => document.getElementById(id);
-
-const elements = {
-    gamesGrid:       $('games-grid'),
-    loadingState:    $('games-loading'),
-    noResultsState:  $('no-results'),
-    modal:           $('game-modal'),
-    closeBtn:        $('close-modal'),
-    backdrop:        $('modal-backdrop'),
-    modalTitle:      $('modal-game-title'),
-    modalYear:       $('modal-game-year'),
-    modalCategories: $('modal-categories'),
-    modalRecords:    $('modal-records-container'),
-    recordsList:     $('records-list'),
-    loadMoreContainer: $('load-more-container'),
-    loadMoreBtn:     $('load-more-btn'),
-    recordsLoading:  $('records-loading'),
-    emptyRecords:    $('empty-records'),
-    trailerContainer: $('modal-trailer-container'),
-    themeToggle:     $('theme-toggle'),
-    iconSun:         $('icon-sun'),
-    iconMoon:        $('icon-moon'),
-};
-
-const DEFAULT_COVER = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" fill="%231a1a1a"><rect width="100%" height="100%"/><text x="50%" y="50%" fill="%23555" font-family="sans-serif" font-size="18" text-anchor="middle" dominant-baseline="middle">No Image</text></svg>';
-
-let currentModalData = { recordsByTab: {}, activeTab: '', visibleCount: 10 };
-
-// ─── Theme ──────────────────────────────────────────────────
-let isDark = true;
-
-function applyTheme() {
-    const body = document.body;
-    if (isDark) {
-        body.classList.add('dark');
-        body.classList.remove('light');
-        elements.iconSun.classList.remove('hidden');
-        elements.iconMoon.classList.add('hidden');
-    } else {
-        body.classList.remove('dark');
-        body.classList.add('light');
-        elements.iconSun.classList.add('hidden');
-        elements.iconMoon.classList.remove('hidden');
-    }
-}
-
-// ─── Public Setup ───────────────────────────────────────────
 export function setupUIListeners() {
-    elements.closeBtn.addEventListener('click', closeModal);
-    elements.backdrop.addEventListener('click', closeModal);
-    elements.loadMoreBtn.addEventListener('click', loadMoreRecords);
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && elements.modal.classList.contains('modal-active')) closeModal();
-    });
-
-    // Theme toggle
-    elements.themeToggle.addEventListener('click', () => {
-        isDark = !isDark;
-        applyTheme();
-    });
-
-    applyTheme();
+    closeBtn.onclick = backdrop.onclick = closeModal;
+    moreBtn.onclick = () => { showing += 10; renderRecords(); };
+    document.onkeydown = e => { if (e.key === 'Escape') closeModal(); };
+    el('theme-toggle').onclick = () => {
+        darkMode = !darkMode;
+        document.body.classList.toggle('dark', darkMode);
+        document.body.classList.toggle('light', !darkMode);
+        el('icon-sun').classList.toggle('hidden', !darkMode);
+        el('icon-moon').classList.toggle('hidden', darkMode);
+    };
 }
-
-// ─── Utilities ──────────────────────────────────────────────
-function formatTime(seconds) {
-    if (!seconds) return 'N/A';
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    let f = '';
-    if (h > 0) f += `${h}h `;
-    if (m > 0 || h > 0) f += `${m}m `;
-    f += `${s.toFixed(3)}s`;
-    return f;
+function getCover(g) { return g.assets?.['cover-large']?.uri || ''; }
+function fmtTime(s) {
+    if (!s) return 'N/A';
+    let h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=(s%60).toFixed(3), r='';
+    if (h) r+=h+'h '; if (m||h) r+=m+'m '; return r+sec+'s';
 }
+export function hideLoading() { loading.classList.add('hidden'); }
+export function showFailure() { loading.innerHTML = '<p class="text-red-400">Failed to load. Refresh the page.</p>'; }
+export function toggleNoResults(show) { noResults.classList.toggle('hidden',!show); grid.classList.toggle('hidden',show); }
 
-function getCoverUri(game) {
-    return game.assets?.['cover-large']?.uri || DEFAULT_COVER;
-}
-
-// ─── Loading / Error States ─────────────────────────────────
-export function hideLoading() { elements.loadingState.classList.add('hidden'); }
-
-export function showFailure() {
-    elements.loadingState.innerHTML = '<p class="text-red-400 font-medium">Failed to load games. Please refresh.</p>';
-}
-
-export function toggleNoResults(show) {
-    elements.noResultsState.classList.toggle('hidden', !show);
-    elements.gamesGrid.classList.toggle('hidden', show);
-}
-
-// ─── Game Grid Rendering ────────────────────────────────────
-export function renderGames(gamesArray) {
-    elements.gamesGrid.innerHTML = '';
-    gamesArray.forEach((game, i) => {
-        const card = createGameCard(game);
-        card.style.animationDelay = `${(i % 20) * 40}ms`;
-        elements.gamesGrid.appendChild(card);
+export function renderGames(games) {
+    grid.innerHTML = '';
+    games.forEach((game, i) => {
+        let card = document.createElement('div'), cover = getCover(game), name = game.names.international;
+        card.className = 'game-card cursor-pointer flex flex-col fade-in bg-dark-card';
+        card.style.animationDelay = (i%20)*30+'ms';
+        card.innerHTML = `<div class="aspect-[3/4] overflow-hidden bg-dark-surface">${cover
+            ? `<img src="${cover}" alt="${name}" class="w-full h-full object-cover" loading="lazy">`
+            : `<div class="w-full h-full flex items-center justify-center text-2xl opacity-20">🎮</div>`
+        }</div><div class="p-3"><h3 class="font-semibold text-sm line-clamp-2">${name}</h3>
+        <p class="text-xs opacity-40 mt-1">${game.released||'Records'}</p></div>`;
+        card.onclick = () => openModal(game);
+        grid.appendChild(card);
     });
 }
-
-function createGameCard(game) {
-    const div = document.createElement('div');
-    div.className = 'game-card cursor-pointer flex flex-col group fade-in bg-dark-card relative';
-
-    const cover = getCoverUri(game);
-    const year = game.released || '';
-
-    div.innerHTML = `
-        <!-- Poster -->
-        <div class="aspect-[3/4] overflow-hidden relative bg-dark-surface">
-            <img src="${cover}" alt="${game.names.international}" class="card-poster w-full h-full object-cover" loading="lazy">
-            
-            <!-- Netflix-style slide-up info overlay -->
-            <div class="card-info-overlay absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent p-4 pt-10">
-                <div class="flex items-center gap-2 mb-2">
-                    <button class="w-10 h-10 rounded-full bg-accent flex items-center justify-center hover:bg-accentHover transition-colors flex-shrink-0">
-                        <svg class="w-5 h-5 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    </button>
-                    <span class="bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">WR</span>
-                </div>
-                <p class="text-xs text-gray-300">${year ? 'Released ' + year : 'View Records →'}</p>
-            </div>
-        </div>
-
-        <!-- Title below card -->
-        <div class="card-meta-area p-3">
-            <h3 class="card-title font-semibold text-sm line-clamp-2 leading-snug text-white">${game.names.international}</h3>
-            <p class="card-subtitle text-xs opacity-50 mt-1">${year || 'Speedrun Records'}</p>
-        </div>
-    `;
-
-    div.addEventListener('click', () => openModal(game));
-    return div;
-}
-
-// ─── Modal ──────────────────────────────────────────────────
 export async function openModal(game) {
-    const cover = getCoverUri(game);
-    elements.modalTitle.textContent = game.names.international;
-    elements.modalYear.textContent = game.released || 'N/A';
-
-    // Cinematic hero poster with "Watch Trailer" button
-    const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(game.names.international + ' official trailer')}`;
-    elements.trailerContainer.innerHTML = `
-        <img src="${cover}" alt="${game.names.international}" class="w-full h-full object-cover opacity-60">
-        <div class="absolute inset-0 bg-gradient-to-t from-dark-card via-black/40 to-black/20"></div>
-        <a href="${ytSearchUrl}" target="_blank" rel="noopener noreferrer" 
-           class="absolute inset-0 flex items-center justify-center">
-            <div class="flex items-center gap-3 bg-black/60 backdrop-blur-sm px-5 py-3 rounded-full border border-white/10 hover:bg-red-600/90 hover:border-red-500 transition-all duration-300">
-                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                <span class="text-white text-sm font-medium">Watch Trailer on YouTube</span>
-            </div>
-        </a>
-    `;
-
-    // Reset states
-    elements.modalCategories.innerHTML = '';
-    elements.recordsList.innerHTML = '';
-    elements.loadMoreContainer.classList.add('hidden');
-    elements.recordsLoading.classList.remove('hidden');
-    elements.emptyRecords.classList.add('hidden');
-
-    document.body.classList.add('modal-open');
-    elements.modal.classList.add('modal-active');
-
+    mTitle.textContent = game.names.international;
+    mYear.textContent = game.released || 'N/A';
+    mCats.innerHTML=''; recList.innerHTML='';
+    moreBox.classList.add('hidden'); recLoading.classList.remove('hidden'); recEmpty.classList.add('hidden');
+    document.body.classList.add('modal-open'); modal.classList.add('modal-active');
     try {
-        const [catsData, recordsData] = await Promise.all([
-            fetchGameCategories(game.id),
-            fetchGameRecords(game.id, 100)
-        ]);
-
-        const catMap = {};
-        (catsData.data || []).forEach(c => { catMap[c.id] = c.name; });
-
-        const records = recordsData.data || [];
-
-        if (records.length === 0) {
-            elements.recordsLoading.classList.add('hidden');
-            elements.emptyRecords.classList.remove('hidden');
-            return;
-        }
-
-        currentModalData.recordsByTab = {};
-        let firstTab = null;
-
-        records.forEach(catRecord => {
-            const catName = catMap[catRecord.category] || 'Unknown';
-            const runs = catRecord.runs || [];
-            if (runs.length > 0) {
-                currentModalData.recordsByTab[catName] = runs;
-                if (!firstTab) firstTab = catName;
-            }
+        let [cats,recs] = await Promise.all([fetchGameCategories(game.id), fetchGameRecords(game.id,100)]);
+        let catNames = {}; (cats.data||[]).forEach(c => catNames[c.id]=c.name);
+        let records = recs.data||[], firstTab = null;
+        tabs = {};
+        records.forEach(r => {
+            let name=catNames[r.category]||'Unknown', runs=r.runs||[];
+            if (runs.length) { tabs[name]=runs; if (!firstTab) firstTab=name; }
         });
-
-        if (!firstTab) {
-            elements.recordsLoading.classList.add('hidden');
-            elements.emptyRecords.classList.remove('hidden');
-            return;
+        if (!firstTab) { recLoading.classList.add('hidden'); recEmpty.classList.remove('hidden'); return; }
+        for (let name in tabs) {
+            let btn = document.createElement('button');
+            btn.className='px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap tab-inactive';
+            btn.textContent=name; btn.dataset.cat=name;
+            btn.onclick=()=>switchTab(name); mCats.appendChild(btn);
         }
-
-        // Build category tabs
-        Object.keys(currentModalData.recordsByTab).forEach(catName => {
-            const btn = document.createElement('button');
-            btn.className = 'px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors tab-inactive';
-            btn.textContent = catName;
-            btn.dataset.cat = catName;
-            btn.addEventListener('click', () => switchTab(catName));
-            elements.modalCategories.appendChild(btn);
-        });
-
-        elements.recordsLoading.classList.add('hidden');
-        switchTab(firstTab);
-
-    } catch (err) {
-        console.error('Modal data error:', err);
-        elements.recordsLoading.classList.add('hidden');
-        elements.emptyRecords.classList.remove('hidden');
-    }
+        recLoading.classList.add('hidden'); switchTab(firstTab);
+    } catch(e) { console.error(e); recLoading.classList.add('hidden'); recEmpty.classList.remove('hidden'); }
 }
-
-function switchTab(tabName) {
-    currentModalData.activeTab = tabName;
-    currentModalData.visibleCount = 10;
-
-    elements.modalCategories.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('tab-active', btn.dataset.cat === tabName);
-        btn.classList.toggle('tab-inactive', btn.dataset.cat !== tabName);
-    });
-
+function switchTab(name) {
+    activeTab=name; showing=10;
+    mCats.querySelectorAll('button').forEach(b => { b.classList.toggle('tab-active',b.dataset.cat===name); b.classList.toggle('tab-inactive',b.dataset.cat!==name); });
     renderRecords();
 }
-
 function renderRecords() {
-    elements.recordsList.innerHTML = '';
-    const runs = currentModalData.recordsByTab[currentModalData.activeTab] || [];
-
-    if (runs.length === 0) {
-        elements.emptyRecords.classList.remove('hidden');
-        elements.loadMoreContainer.classList.add('hidden');
-        return;
-    }
-    elements.emptyRecords.classList.add('hidden');
-
-    const visible = runs.slice(0, currentModalData.visibleCount);
-
-    visible.forEach((entry, i) => {
-        const rank = entry.place;
-        const run = entry.run;
-
-        let playerName = 'Unknown Runner';
-        if (run.players?.[0]) {
-            const p = run.players[0];
-            playerName = p.name || `Runner ${(p.id || '').substring(0, 5).toUpperCase()}`;
-        }
-
-        const time = formatTime(run.times?.primary_t);
-        const date = run.date ? new Date(run.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
-        const link = run.weblink || '#';
-
-        const rankColor = rank === 1 ? 'bg-accent text-black' 
-            : rank === 2 ? 'bg-gray-300 text-black' 
-            : rank === 3 ? 'bg-amber-600 text-white' 
-            : 'bg-dark-surface text-white/50';
-
-        const row = document.createElement('div');
-        row.className = 'record-row flex items-center gap-4 px-6 py-3 fade-in';
-        row.style.animationDelay = `${(i % 10) * 30}ms`;
-
-        row.innerHTML = `
-            <div class="w-8 h-8 rounded-full ${rankColor} flex items-center justify-center text-xs font-bold flex-shrink-0">${rank}</div>
-            <div class="flex-1 min-w-0">
-                <p class="font-medium text-sm truncate">${playerName}</p>
-                <p class="text-xs opacity-40">${date}</p>
-            </div>
-            <div class="font-mono text-sm font-semibold text-accent flex-shrink-0">${time}</div>
-            ${link !== '#' ? `<a href="${link}" target="_blank" rel="noopener noreferrer" class="flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity" title="View on Speedrun.com">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"></path></svg>
-            </a>` : ''}
-        `;
-        elements.recordsList.appendChild(row);
+    recList.innerHTML='';
+    let runs = tabs[activeTab]||[];
+    if (!runs.length) { recEmpty.classList.remove('hidden'); moreBox.classList.add('hidden'); return; }
+    recEmpty.classList.add('hidden');
+    runs.slice(0,showing).forEach(entry => {
+        let run=entry.run, rank=entry.place, player=run.players?.[0]?.name||'Unknown', time=fmtTime(run.times?.primary_t);
+        let date=run.date?new Date(run.date).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'—';
+        let badge=rank===1?'bg-accent text-black':rank===2?'bg-gray-300 text-black':rank===3?'bg-amber-600 text-white':'bg-dark-surface text-white/50';
+        let row=document.createElement('div');
+        row.className='record-row flex items-center gap-4 px-6 py-3 fade-in';
+        row.innerHTML=`<div class="w-8 h-8 rounded-full ${badge} flex items-center justify-center text-xs font-bold">${rank}</div>
+            <div class="flex-1 min-w-0"><p class="font-medium text-sm truncate">${player}</p><p class="text-xs opacity-40">${date}</p></div>
+            <div class="font-mono text-sm font-semibold text-accent">${time}</div>
+            ${run.weblink?`<a href="${run.weblink}" target="_blank" class="opacity-40 hover:opacity-100">↗</a>`:''}`;
+        recList.appendChild(row);
     });
-
-    elements.loadMoreContainer.classList.toggle('hidden', runs.length <= currentModalData.visibleCount);
-
-    if (currentModalData.visibleCount === 10) {
-        elements.modalRecords.scrollTop = 0;
-    }
+    moreBox.classList.toggle('hidden', runs.length<=showing);
+    if (showing===10) recContainer.scrollTop=0;
 }
-
-function loadMoreRecords() {
-    currentModalData.visibleCount += 10;
-    renderRecords();
-}
-
-function closeModal() {
-    elements.modal.classList.remove('modal-active');
-    document.body.classList.remove('modal-open');
-}
+function closeModal() { modal.classList.remove('modal-active'); document.body.classList.remove('modal-open'); }
